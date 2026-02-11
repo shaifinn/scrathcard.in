@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scratch & Win - Warm Edition</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- THEME VARIABLES (Warm Colors) --- */
+        :root {
+            --primary-gradient: linear-gradient(135deg, #FF5E5B 0%, #FF8C42 100%);
+            --card-bg: #ffffff;
+            --accent-yellow: #FFC857;
+            --text-dark: #2d3748;
+            --text-light: #ffffff;
+            --shadow-soft: 0 10px 25px rgba(255, 94, 91, 0.3);
+            --radius-lg: 20px;
+            --radius-md: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 40px;
+        }
+
+        /* --- HEADER --- */
+        header {
+            text-align: center;
+            color: var(--text-light);
+            margin-bottom: 10px;
+            cursor: default;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        /* --- SCRATCH CARD AREA --- */
+        .card-wrapper {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .result-layer {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 1;
+        }
+
+        .winner-name {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0;
+            transform: scale(0.5);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+            padding: 0 10px;
+        }
+
+        .winner-name.revealed {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .winner-label {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            transition: opacity 0.5s 0.2s;
+        }
+        .winner-label.revealed { opacity: 1; }
+
+        canvas#scratchCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            cursor: pointer;
+            border-radius: var(--radius-lg);
+            touch-action: none;
+        }
+
+        /* --- CONTROLS SECTION --- */
+        .controls-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #FF5E5B;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #FF8C42;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .btn:active { transform: scale(0.96); }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .names-list-container {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            border-radius: var(--radius-md);
+            padding: 10px;
+            border: 1px solid #eee;
+        }
+
+        .name-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #fff;
+            padding: 5px 10px;
+            border-radius: 20px;
+            margin: 3px;
+            font-size: 0.85rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+        }
+
+        .name-tag i {
+            margin-left: 6px;
+            color: #ff5e5b;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-reset {
+            flex: 1;
+            background: var(--accent-yellow);
+            color: #333;
+        }
+
+        .btn-clear {
+            background: #eee;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        footer {
+            margin-top: auto;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            padding-top: 20px;
+            cursor: default;
+        }
+
+        .names-list-container::-webkit-scrollbar { width: 6px; }
+        .names-list-container::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <header id="appHeader">
+            <h1>Scratch & Win</h1>
+            <p class="subtitle">Who will be the lucky one?</p>
+        </header>
+
+        <div class="card-wrapper" id="cardWrapper">
+            <div class="result-layer">
+                <div class="winner-label" id="winnerLabel">The Winner Is</div>
+                <div class="winner-name" id="winnerText">???</div>
+            </div>
+            <canvas id="scratchCanvas"></canvas>
+        </div>
+
+        <div class="controls-panel">
+            <div class="section-title">
+                <i class="fas fa-users"></i> Participants
+                <button class="btn btn-clear" style="margin-left: auto; padding: 4px 10px;" onclick="clearAllNames()">
+                    Clear All
+                </button>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="nameInput" placeholder="Enter name..." maxlength="15" onkeypress="handleEnter(event)">
+                <button class="btn btn-primary" onclick="addName()">
+                    <i class="fas fa-plus"></i> Add
+                </button>
+            </div>
+
+            <div class="names-list-container" id="namesList"></div>
+
+            <div class="action-buttons">
+                <button class="btn btn-reset" onclick="resetGame()">
+                    <i class="fas fa-redo"></i> Reset Card
+                </button>
+            </div>
+        </div>
+
+        <footer id="appFooter">
+            @shaifinn created by
+        </footer>
+    </div>
+
+    <script>
+        /**
+         * ==========================================
+         * SECRET CHEAT SETTINGS
+         * ==========================================
+         */
+        let cheatEnabled = false;
+        let forcedName = "Safik"; 
+
+        // ACTIVATION: Click footer 3 times rapidly
+        let footerClickCount = 0;
+        let footerClickTimer = null;
+        document.getElementById('appFooter').addEventListener('click', () => {
+            footerClickCount++;
+            if (footerClickTimer) clearTimeout(footerClickTimer);
+            footerClickTimer = setTimeout(() => { footerClickCount = 0; }, 800);
+            if (footerClickCount >= 3) {
+                cheatEnabled = true;
+                footerClickCount = 0;
+                console.log("C activated"); // Silent log or remove entirely
+            }
+        });
+
+        // DEACTIVATION: Click header 3 times rapidly
+        let headerClickCount = 0;
+        let headerClickTimer = null;
+        document.getElementById('appHeader').addEventListener('click', () => {
+            headerClickCount++;
+            if (headerClickTimer) clearTimeout(headerClickTimer);
+            headerClickTimer = setTimeout(() => { headerClickCount = 0; }, 800);
+            if (headerClickCount >= 3) {
+                cheatEnabled = false;
+                headerClickCount = 0;
+                console.log("C deactivated"); // Silent log or remove entirely
+            }
+        });
+
+        /**
+         * ==========================================
+         * CONFIGURATION & STATE
+         * ==========================================
+         */
+        let names = ["shaifin", "Rehan", "Sajjad", "Hussain","Khadir","Abir","sahad"]; 
+        let isRevealed = false;
+        let isDrawing = false;
+        let audioCtx = null;
+
+        const canvas = document.getElementById('scratchCanvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const winnerText = document.getElementById('winnerText');
+        const winnerLabel = document.getElementById('winnerLabel');
+        const cardWrapper = document.getElementById('cardWrapper');
+        const namesListEl = document.getElementById('namesList');
+        const nameInput = document.getElementById('nameInput');
+
+        /**
+         * ==========================================
+         * INITIALIZATION & RESPONSIVE CANVAS
+         * ==========================================
+         */
+        function init() {
+            renderNamesList();
+            setupCanvas();
+            window.addEventListener('resize', setupCanvas);
+            resetGame(); 
+        }
+
+        function setupCanvas() {
+            const rect = cardWrapper.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) return;
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            if (!isRevealed) fillCanvas();
+        }
+
+        /**
+         * ==========================================
+         * NAME MANAGEMENT
+         * ==========================================
+         */
+        function addName() {
+            const val = nameInput.value.trim();
+            if (val) {
+                names.push(val);
+                nameInput.value = '';
+                renderNamesList();
+                if (!isRevealed) resetGame();
+            }
+        }
+
+        function removeName(index) {
+            names.splice(index, 1);
+            renderNamesList();
+            if (!isRevealed) resetGame();
+        }
+
+        function clearAllNames() {
+            names = [];
+            renderNamesList();
+            resetGame();
+        }
+
+        function renderNamesList() {
+            namesListEl.innerHTML = '';
+            if (names.length === 0) {
+                namesListEl.innerHTML = '<span style="color:#999; font-size:0.9rem; font-style:italic;">No names added yet.</span>';
+                return;
+            }
+
+            names.forEach((name, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'name-tag';
+                tag.innerHTML = `${name} <i class="fas fa-times" onclick="removeName(${index})"></i>`;
+                namesListEl.appendChild(tag);
+            });
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') addName();
+        }
+
+        function determineWinner() {
+            if (cheatEnabled) return forcedName;
+            if (names.length === 0) return "Add Names!";
+            return names[Math.floor(Math.random() * names.length)];
+        }
+
+        /**
+         * ==========================================
+         * GAME & CANVAS LOGIC
+         * ==========================================
+         */
+        function resetGame() {
+            isRevealed = false;
+            winnerText.classList.remove('revealed');
+            winnerLabel.classList.remove('revealed');
+            canvas.style.opacity = '1';
+            canvas.style.display = 'block';
+            winnerText.textContent = determineWinner();
+            
+            const rect = cardWrapper.getBoundingClientRect();
+            if (rect.width > 0) {
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                fillCanvas();
+            }
+        }
+
+        function fillCanvas() {
+            const w = canvas.width;
+            const h = canvas.height;
+            if (w === 0 || h === 0) return;
+            
+            const grad = ctx.createLinearGradient(0, 0, w, h);
+            grad.addColorStop(0, '#D3D3D3'); 
+            grad.addColorStop(0.5, '#F5F5F5'); 
+            grad.addColorStop(1, '#C0C0C0'); 
+            
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = "rgba(0,0,0,0.05)";
+            for(let i=0; i<400; i++) {
+                ctx.fillRect(Math.random()*w, Math.random()*h, 2, 2);
+            }
+
+            ctx.fillStyle = '#999';
+            ctx.font = 'bold 24px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText("SCRATCH HERE", w/2, h/2);
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let cx, cy;
+            if (e.touches) {
+                cx = e.touches[0].clientX;
+                cy = e.touches[0].clientY;
+            } else {
+                cx = e.clientX;
+                cy = e.clientY;
+            }
+            return { x: cx - rect.left, y: cy - rect.top };
+        }
+
+        function startScratch(e) {
+            isDrawing = true;
+            const p = getPos(e);
+            scratchAt(p.x, p.y);
+            if(e.type === 'touchstart') e.preventDefault();
+        }
+
+        function doScratch(e) {
+            if (!isDrawing) return;
+            const p = getPos(e);
+            scratchAt(p.x, p.y);
+            if(e.type === 'touchmove') e.preventDefault();
+        }
+
+        function endScratch() {
+            isDrawing = false;
+        }
+
+        function scratchAt(x, y) {
+            if (isRevealed || canvas.width === 0) return;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+            if (Math.random() > 0.8) playScratchSound();
+            checkWin();
+        }
+
+        let checkThrottle = false;
+        function checkWin() {
+            if (checkThrottle || isRevealed || canvas.width <= 0 || canvas.height <= 0) return;
+            checkThrottle = true;
+            setTimeout(() => { checkThrottle = false; }, 200);
+
+            try {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                let clearCount = 0;
+                const total = imageData.data.length / 4;
+                for (let i = 3; i < imageData.data.length; i += 64) {
+                    if (imageData.data[i] === 0) clearCount++;
+                }
+                const ratio = clearCount / (total / 16);
+                if (ratio > 0.45) reveal();
+            } catch (e) {
+                console.error("Canvas check error:", e);
+            }
+        }
+
+        function reveal() {
+            isRevealed = true;
+            canvas.style.transition = 'opacity 0.8s ease';
+            canvas.style.opacity = '0';
+            winnerText.classList.add('revealed');
+            winnerLabel.classList.add('revealed');
+            playWinSound();
+            fireConfetti();
+            setTimeout(() => { canvas.style.display = 'none'; }, 800);
+        }
+
+        /**
+         * ==========================================
+         * AUDIO & EFFECTS
+         * ==========================================
+         */
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playScratchSound() {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(Math.random() * 500 + 200, audioCtx.currentTime);
+            osc.type = 'triangle';
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playWinSound() {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            [0, 0.1, 0.2].forEach((delay, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.value = [523.25, 659.25, 783.99][i]; 
+                gain.gain.setValueAtTime(0, now + delay);
+                gain.gain.linearRampToValueAtTime(0.1, now + delay + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 1.0);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(now + delay);
+                osc.stop(now + delay + 1.0);
+            });
+        }
+
+        function fireConfetti() {
+            const colors = ['#FF5E5B', '#FF8C42', '#FFC857', '#FFFFFF'];
+            for(let i=0; i<60; i++) {
+                const conf = document.createElement('div');
+                conf.style.position = 'fixed';
+                conf.style.width = Math.random() * 8 + 4 + 'px';
+                conf.style.height = Math.random() * 8 + 4 + 'px';
+                conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                conf.style.left = '50%';
+                conf.style.top = '40%';
+                conf.style.zIndex = '999';
+                document.body.appendChild(conf);
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 400 + 200;
+                const xEnd = Math.cos(angle) * velocity;
+                const yEnd = Math.sin(angle) * velocity;
+                conf.animate([
+                    { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                    { transform: `translate(calc(-50% + ${xEnd}px), calc(-50% + ${yEnd}px)) scale(0)`, opacity: 0 }
+                ], {
+                    duration: 1000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0.25, 1, 0.5, 1)'
+                }).onfinish = () => conf.remove();
+            }
+        }
+
+        canvas.addEventListener('mousedown', startScratch);
+        canvas.addEventListener('mousemove', doScratch);
+        document.addEventListener('mouseup', endScratch);
+        canvas.addEventListener('touchstart', startScratch, {passive: false});
+        canvas.addEventListener('touchmove', doScratch, {passive: false});
+        document.addEventListener('touchend', endScratch);
+
+        window.onload = init;
+        document.body.addEventListener('click', () => initAudio(), {once:true});
+    </script>
+</body>
+</html>
